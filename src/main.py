@@ -1,13 +1,27 @@
 import src.comb as comb
 import time
 
+terms = [
+    "Sx(Ky)z",
+    "B(BW)(BBC)xyz",
+    "S(KS)Kxyz",
+    "S(BBS)(KK)xyz",
+    "S(S(KS)K(S(KS)K)S)(KK)xyz",
+    "S(S(KS)K(S(KS)K)S)(KK)",
+]
+
 def main():
-    term = comb.parse_term("((a)(b))")
-    print(comb.print_term(term))
-    comb.free_term(term)
+    for term in terms:
+        if term != terms[0]:
+            print()
 
-    term = comb.parse_term("Sx(Ky)z")
-    print(comb.print_term(term))
-    comb.free_term(term)
-
-    comb.parse_term("(a()") # should raise
+        last_tree = comb.parse_term(term)
+        print(comb.print_term(last_tree))
+        while True:
+            tree = comb.reduce_term(last_tree)
+            if comb.print_term(tree) == comb.print_term(last_tree):
+                break
+            comb.free_term(last_tree)
+            last_tree = tree
+            print("-> ", comb.print_term(tree))
+        comb.free_term(last_tree)

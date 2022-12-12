@@ -18,12 +18,23 @@ term_t *new_leaf(char c) {
 // returned node.
 term_t *new_node(term_t *left, term_t *right) {
     assert(left != NULL);
+    assert(right != NULL);
     term_t *node = malloc(sizeof(term_t));
     node->c = '\0';
     node->is_leaf = 0;
     node->left = left;
     node->right = right;
     return node;
+}
+
+// Copies the given term. The caller is responsible for freeing the
+// returned term.
+term_t *copy_term(term_t *term) {
+    if (term->is_leaf) {
+        return new_leaf(term->c);
+    } else {
+        return new_node(copy_term(term->left), copy_term(term->right));
+    }
 }
 
 // Frees the given term node and all of its children.
@@ -189,7 +200,102 @@ term_t *parse_term(const char *str) {
     return term;
 }
 
-// Dummy implementations of the reamining functions:
+// Reduces every redex in the given term by a single step, starting from the
+// right-most redex. This function does not mutate the given term, but instead
+// returns a new term. The caller is responsible for freeing the returned term.
 term_t *reduce_term(term_t *term) {
-    return NULL; // TODO: implement
+    assert(term != NULL);
+
+    // We walk the tree down to the left-most leaf using a stack to keep track
+    // of the right-hand children.
+    term_t **stack = malloc(sizeof(term_t *));
+    term_t *node = term;
+    int stack_size = 0;
+    while (node != NULL) {
+        if (node->is_leaf) {
+            break;
+        }
+
+        stack = realloc(stack, (stack_size + 1) * sizeof(term_t *));
+        stack[stack_size] = reduce_term(node->right);
+        stack_size++;
+        node = node->left;
+    }
+
+    // If the leaf-node is not a combinator, then we simply reconstruct the
+    // tree from the stack and return it, as we cannot reduce anything:
+    if (node->c != 'S' && node->c != 'K' && node->c != 'I' &&
+        node->c != 'B' && node->c != 'C' && node->c != 'W') {
+        term_t *result = copy_term(node);
+        for (int i = stack_size - 1; i >= 0; i--) {
+            result = new_node(result, stack[i]);
+        }
+        free(stack);
+        return result;
+    }
+
+    // If the leaf-node is a combinator, then we can reduce it, assuming there
+    // are enough arguments to apply the corresponding derivation rule:
+    //   Sxyz -> xz(yz)
+    //   Kxy  -> x
+    //   Ix   -> x
+    //   Bxyz -> x(yz)
+    //   Cxyz -> xzy
+    //   Wxy  -> xyy
+    term_t *result;
+    if (node->c == 'S' && stack_size >= 3) {
+        result = new_node(
+            new_node(
+                stack[stack_size - 1],
+                stack[stack_size - 3]
+            ),
+            new_node(
+                stack[stack_size - 2],
+                copy_term(stack[stack_size - 3])
+            )
+        );
+        stack_size -= 3;
+    } else if (node->c == 'K' && stack_size >= 2) {
+        result = stack[stack_size - 1];
+        stack_size -= 2;
+    } else if (node->c == 'I' && stack_size >= 1) {
+        result = stack[stack_size - 1];
+        stack_size -= 1;
+    } else if (node->c == 'B' && stack_size >= 3) {
+        result = new_node(
+            stack[stack_size - 1],
+            new_node(
+                stack[stack_size - 2],
+                stack[stack_size - 3]
+            )
+        );
+        stack_size -= 3;
+    } else if (node->c == 'C' && stack_size >= 3) {
+        result = new_node(
+            new_node(
+                stack[stack_size - 1],
+                stack[stack_size - 3]
+            ),
+            stack[stack_size - 2]
+        );
+        stack_size -= 3;
+    } else if (node->c == 'W' && stack_size >= 2) {
+        result = new_node(
+            new_node(
+                stack[stack_size - 1],
+                stack[stack_size - 2]
+            ),
+            copy_term(stack[stack_size - 2])
+        );
+        stack_size -= 2;
+    } else {
+        result = copy_term(node);
+    }
+
+    // Finally, we reconstruct the tree from the remaining stack and return it:
+    for (int i = stack_size - 1; i >= 0; i--) {
+        result = new_node(result, stack[i]);
+    }
+    free(stack);
+    return result;
 }

@@ -24,11 +24,12 @@ typedef struct term {
 		char c; // '\0' unless is_leaf
 	  int is_leaf; // 0 if internal node, 1 if leaf
 		struct term *left; // NULL if leaf, not NULL otherwise
-		struct term *right; // NULL if leaf, optionally NULL otherwise
+		struct term *right; // NULL if leaf, not NULL otherwise
 } term_t;
 
 term_t *new_leaf(char c);
 term_t *new_node(term_t *left, term_t *right);
+term_t *copy_term(term_t *term);
 void free_term(term_t *term);
 char *print_term(term_t *term);
 term_t *parse_term(const char *str);
