@@ -101,4 +101,38 @@ def print_term(term: "term_t *") -> str:
         Returns:
             A string representation of the term.
         """
-    return _ffibuilder.string(_lib.print_term(term)).decode("utf-8")
+    c_str = _lib.print_term(term)
+    py_str = _ffibuilder.string(c_str).decode("utf-8")
+    _lib.free(c_str)
+    return py_str
+
+def parse_term(str: str) -> "term_t *":
+    """Parses the given string into a term. The string must be a valid term,
+    with balanced parentheses and no whitespace, otherwise an error will be
+    raised.
+
+        Args:
+            str: The string to parse.
+
+        Returns:
+            A cffi pointer to the parsed term.
+
+        Raises:
+            ValueError: If the string is not a valid term.
+        """
+    term = _lib.parse_term(bytes(str, "utf-8"))
+    if term == NULL:
+        raise ValueError(f"Invalid term: {str}")
+    return term
+
+def reduce_term(term: "term_t *") -> "term_t *":
+    """Reduces every redex in the given term by a single step, starting from
+    the most deeply-nested redex.
+
+        Args:
+            term: The term to reduce.
+
+        Returns:
+            A cffi pointer to the reduced term.
+        """
+    return _lib.reduce_term(term)

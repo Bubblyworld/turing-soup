@@ -33,3 +33,6 @@ void free_term(term_t *term);
 char *print_term(term_t *term);
 term_t *parse_term(const char *str);
 term_t *reduce_term(term_t *term);
+
+// We need to be able to free strings returned by print_term:
+void free(void *ptr);
