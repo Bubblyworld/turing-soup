@@ -1,6 +1,7 @@
 from pathlib import Path
 from cffi import FFI
 from typing import Optional
+from copy import copy
 
 def _localpath(filename):
     return Path(__file__).parent / filename
@@ -15,64 +16,68 @@ with open(_COMB_H) as f:
 _ffibuilder.set_source("_comb", _COMB_BOOT, sources=[_COMB_C])
 _ffibuilder.compile()
 
-# Copilot, this is the header file we are wrapping:
-"""
-/* Terms are represented as strings over the alphabet 'SKIBCW()abc...z', and
- * are required to have balanced parentheses. Uppercase characters are
- * the combinators, and lowercase characters are variables. Terms are 
- * evaluated as left-associative, with brackets to override this, meaning 
- * that a term like 'Sa(bc)' is equivalent to '((Sa)(bc))'.
- *
- * The supported combinators, along with their derivation schemas, are:
- *   Sxyz -> xz(yz)
- *   Kxy  -> x
- *   Ix   -> x
- *   Bxyz -> x(yz)
- *   Cxyz -> xzy
- *   Wxy  -> xyy
- *
- * The internal representation of terms is a tree of nodes, where each node
- * is either a combinator or a variable. The tree is constructed by parsing
- * the string representation of the term, and then evaluated by traversing
- * the tree left-to-right and applying the appropriate combinators.
- */
-
-typedef struct term {
-		char c; // '\0' unless is_leaf
-	  int is_leaf; // 0 if internal node, 1 if leaf
-		struct term *left; // NULL if leaf, not NULL otherwise
-		struct term *right; // NULL if leaf, optionally NULL otherwise
-} term_t;
-
-term_t *new_leaf(char c);
-term_t *new_node(term_t *left, term_t *right);
-void free_term(term_t *term);
-char *print_term(term_t *term);
-term_t *parse_term(const char *str);
-term_t *reduce_term(term_t *term);
-"""
-
-# I want you to wrap each of these methods, with the following rules:
-#   1) every function must have a docstring
-#   2) every function must have a type annotation
-#   3) functions that take or return strings must have a python interface,
-#      with the funky _ffibuilder.string() stuff hidden from the user.
+# Actual wrapper code is below. The goal in this module is to hide _all_ of
+# the memory management from callers, as it's super easy to leak memory if you
+# use the C API directly. The approach here is that whenever a pointer is
+# returned from a function, it's immediately converted to a native Python
+# wrapper that is responsible for freeing the memory. In the case of primitives
+# like strings, we just convert them to their Python counterparts and free the
+# memory immediately.
 import _comb.lib as _lib
 
+# Useful constants:
 NULL = _ffibuilder.NULL
 
-def new_leaf(c: str) -> "term_t *":
+class Term:
+    """Python wrapper of "term_t *" pointers that frees them with "free_term()"
+    when they are garbage-collected."""
+    def __init__(self, term: "term_t *"):
+        self._term = term
+
+    def __del__(self):
+        _lib.free_term(self._term)
+
+    def __repr__(self):
+        return f"Term({self})"
+
+    def __str__(self):
+        c_str = _lib.print_term(self._term)
+        py_str = _ffibuilder.string(c_str).decode("utf-8")
+        _lib.free(c_str)
+        return py_str
+
+    def __eq__(self, other):
+        if not isinstance(other, Term):
+            return False
+        return str(self) == str(other)
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __bool__(self):
+        return self._term != NULL
+
+    def __nonzero__(self):
+        return self.__bool__()
+
+    def __deepcopy__(self, memo):
+        return Term(lib.copy_term(self._term))
+
+    def __copy__(self):
+        return Term(lib.copy_term(self._term))
+
+def leaf(c: str) -> Term:
     """Creates a new leaf node with the given character.
 
         Args:
             c: The character to store in the leaf.
 
         Returns:
-            A cffi pointer to the new leaf node.
+            A Term representing the new leaf.
         """
-    return _lib.new_leaf(bytes(c, "utf-8"))
+    return Term(_lib.new_leaf(bytes(c, "utf-8")))
 
-def new_node(left: "term_t *", right: "term_t *") -> "term_t *":
+def internal(left: Term, right: Term) -> Term:
     """Creates a new internal node with the given children.
 
         Args:
@@ -80,33 +85,11 @@ def new_node(left: "term_t *", right: "term_t *") -> "term_t *":
             right: The right child of the new node.
 
         Returns:
-            A cffi pointer to the new internal node.
+            A Term representing the new node.
         """
-    return _lib.new_node(left, right)
+    return Term(_lib.new_node(copy(left)._term, copy(right)._term))
 
-def free_term(term: "term_t *") -> None:
-    """Frees the memory associated with the given term.
-
-        Args:
-            term: The term to free.
-        """
-    _lib.free_term(term)
-
-def print_term(term: "term_t *") -> str:
-    """Prints the given term to a string.
-
-        Args:
-            term: The term to print.
-
-        Returns:
-            A string representation of the term.
-        """
-    c_str = _lib.print_term(term)
-    py_str = _ffibuilder.string(c_str).decode("utf-8")
-    _lib.free(c_str)
-    return py_str
-
-def parse_term(str: str) -> "term_t *":
+def parse(str: str) -> Term:
     """Parses the given string into a term. The string must be a valid term,
     with balanced parentheses and no whitespace, otherwise an error will be
     raised.
@@ -115,7 +98,7 @@ def parse_term(str: str) -> "term_t *":
             str: The string to parse.
 
         Returns:
-            A cffi pointer to the parsed term.
+            A Term representing the parsed string.
 
         Raises:
             ValueError: If the string is not a valid term.
@@ -123,9 +106,9 @@ def parse_term(str: str) -> "term_t *":
     term = _lib.parse_term(bytes(str, "utf-8"))
     if term == NULL:
         raise ValueError(f"Invalid term: {str}")
-    return term
+    return Term(term)
 
-def reduce_term(term: "term_t *") -> "term_t *":
+def reduce(term: Term) -> Term:
     """Reduces every redex in the given term by a single step, starting from
     the most deeply-nested redex.
 
@@ -135,4 +118,4 @@ def reduce_term(term: "term_t *") -> "term_t *":
         Returns:
             A cffi pointer to the reduced term.
         """
-    return _lib.reduce_term(term)
+    return Term(_lib.reduce_term(term._term))
