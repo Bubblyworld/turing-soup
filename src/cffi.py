@@ -38,7 +38,7 @@ class Term:
         _lib.free_term(self._term)
 
     def __repr__(self):
-        return f"Term({self})"
+        return str(self)
 
     def __str__(self):
         c_str = _lib.print_term(self._term)
@@ -71,7 +71,7 @@ class Term:
         in normal form."""
         return reduce(self)
 
-    def beta_normal(self, cutoff=10000) -> Tuple["Term", bool]:
+    def beta_normal(self, cutoff=1000) -> Tuple["Term", bool]:
         """Returns the beta normal form of this term, and whether or not the
         cutoff number of reductions was reached. If the cutoff was reached, the
         return value is None."""

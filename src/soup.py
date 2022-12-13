@@ -17,10 +17,11 @@ class Soup:
     """
 
     # Constants that can be tuned to find interesting behaviours:
-    P_ACTION = 0.4 # Probability of applying an action to a term.
-    P_REDUCE = 0.75 # Probability of the action being a reduction.
-    P_FISSION = 0.125 # Probability of the action being a fission.
-    P_FUSION = 0.125 # Probability of the action being a fusion.
+    P_ACTION = 0.3 # Probability of applying an action to a term.
+    P_REDUCE = 0.8 # Probability of the action being a reduction.
+    P_FISSION = 0.1 # Probability of the action being a fission.
+    P_FUSION = 0.1 # Probability of the action being a fusion.
+    P_BREAK = 0.3 # Probability of a term breaking at any given fission point.
 
     def __init__(self, terms: int, alphabet: str = "SKI"):
         """Creates a new Soup with the given number and type of atomic terms,
@@ -75,6 +76,19 @@ class Soup:
             for _ in range(deficit):
                 self._soup.append(parse(c))
 
+    def immortals(self) -> List[Term]:
+        """Returns a list of all the terms that have no beta normal form.
+
+        Returns:
+            A list of all the terms that have no beta normal form.
+        """
+        def has_beta_normal(term: Term) -> bool:
+            """Returns True if the given term has a beta normal form.
+            """
+            _, res = term.beta_normal()
+            return res
+        return [term for term in self._soup if not has_beta_normal(term)]
+
     def _count(self) -> Mapping[str, int]:
         """Returns a count of each kind of combinator in the soup.
 
@@ -116,10 +130,8 @@ class Soup:
             elif depth == 0 and i > 0 and i < len(term_str) - 1:
                 splits.append(i)
 
-        # If there are no valid splits, we can't split the term:
-        if len(splits) == 0:
-            return [term]
-
-        # Otherwise, we pick a random split and split the term:
-        split = random.choice(splits)
-        return [parse(term_str[:split]), parse(term_str[split:])]
+        # Each split point is split with probability P_BREAK:
+        for i in splits:
+            if random.random() < self.P_BREAK:
+                return [parse(term_str[:i]), parse(term_str[i:])]
+        return [term]
