@@ -1,13 +1,13 @@
 from pathlib import Path
 from cffi import FFI
-from typing import Optional
+from typing import Optional, Tuple
 from copy import copy
 
-def _localpath(filename):
-    return Path(__file__).parent / filename
+def _clibpath(filename):
+    return Path(__file__).parent / "c_lib" / filename
 
-_COMB_H = _localpath("comb.h")
-_COMB_C = _localpath("comb.c")
+_COMB_H = _clibpath("comb.h")
+_COMB_C = _clibpath("comb.c")
 _COMB_BOOT = f"#include \"{_COMB_H}\""
 
 _ffibuilder = FFI()
@@ -66,6 +66,27 @@ class Term:
     def __copy__(self):
         return Term(lib.copy_term(self._term))
 
+    def reduce(self) -> "Term":
+        """Returns the result of reducing this term, or None if it is already
+        in normal form."""
+        return reduce(self)
+
+    def beta_normal(self, cutoff=10000) -> Tuple["Term", bool]:
+        """Returns the beta normal form of this term, and whether or not the
+        cutoff number of reductions was reached. If the cutoff was reached, the
+        return value is None."""
+        term = self
+        for _ in range(cutoff):
+            reduced = term.reduce()
+            if reduced == term:
+                return term, True
+            term = reduced
+        return None, False
+
+    def is_beta_normal(self) -> bool:
+        """Returns True if this term is in beta normal form."""
+        return self == self.reduce()
+
 def leaf(c: str) -> Term:
     """Creates a new leaf node with the given character.
 
@@ -116,6 +137,6 @@ def reduce(term: Term) -> Term:
             term: The term to reduce.
 
         Returns:
-            A cffi pointer to the reduced term.
+            A Term representing the result of reducing the given term.
         """
     return Term(_lib.reduce_term(term._term))

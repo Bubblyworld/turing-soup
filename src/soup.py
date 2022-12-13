@@ -1,4 +1,4 @@
-from .comb import parse, reduce, Term
+from .cffi import parse, reduce, Term
 from typing import List, Mapping
 import random
 
@@ -17,7 +17,7 @@ class Soup:
     """
 
     # Constants that can be tuned to find interesting behaviours:
-    P_ACTION = 0.1 # Probability of applying an action to a term.
+    P_ACTION = 0.4 # Probability of applying an action to a term.
     P_REDUCE = 0.75 # Probability of the action being a reduction.
     P_FISSION = 0.125 # Probability of the action being a fission.
     P_FUSION = 0.125 # Probability of the action being a fusion.

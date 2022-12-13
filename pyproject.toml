@@ -6,7 +6,8 @@ authors = ["Guy Paterson-Jones <guy.paterson.jones@gmail.com>"]
 packages = [{ include = "src" }]
 
 [tool.poetry.scripts]
-life = "src.main:main"
+soup = "src.scripts.soup:main"
+comb = "src.scripts.comb:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
