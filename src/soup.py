@@ -17,10 +17,10 @@ class Soup:
     """
 
     # Constants that can be tuned to find interesting behaviours:
-    P_ACTION = 0.3 # Probability of applying an action to a term.
-    P_REDUCE = 0.8 # Probability of the action being a reduction.
-    P_FISSION = 0.1 # Probability of the action being a fission.
-    P_FUSION = 0.1 # Probability of the action being a fusion.
+    P_ACTION = 0.5 # Probability of applying an action to a term.
+    P_REDUCE = 0.7 # Probability of the action being a reduction.
+    P_FISSION = 0.15 # Probability of the action being a fission.
+    P_FUSION = 0.15 # Probability of the action being a fusion.
     P_BREAK = 0.3 # Probability of a term breaking at any given fission point.
 
     def __init__(self, terms: int, alphabet: str = "SKI"):
