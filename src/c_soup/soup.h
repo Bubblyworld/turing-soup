@@ -3,16 +3,21 @@
 // Combinator terms are simply C strings:
 typedef char *term_t;
 
+// Functions for working with terms:
+term_t term_new(const char *str);
+void term_normalise(term_t term);
+
 // Subterms keeps track of the indices of successive subterms in a term. These
 // are used to check for redexes and for fast evaluation.
 typedef struct {
-	int size;       // The number of set subterms.
+	int size;       // The number of set indices.
 	int indices[6]; // We never need more than 6 subterms for redexes.
 } subterms_t;
 
 // Functions for working with subterms:
 void subterms_init(subterms_t *subterms);
 void subterms_push(subterms_t *subterms, int index);
+void subterms_copy(subterms_t *subterms, term_t dest, term_t src, int index);
 
 /******************************************************************************
  *                       LISTING REDEXES IN A TERM														*
@@ -35,6 +40,10 @@ void subterms_list_free(subterms_list_t *list);
 void subterms_list_resize(subterms_list_t *list, int capacity);
 void subterms_list_push(subterms_list_t *list);
 subterms_t *subterms_list_top(subterms_list_t *list);
-
-// List all the redexes in a term:
 void list_redexes(term_t term, subterms_list_t *stack, subterms_list_t *results);
+
+/******************************************************************************
+ *                       EVALUATING A REDEX IN A TERM													*
+ ******************************************************************************/
+
+int apply_redex(term_t term, subterms_t *redex);
