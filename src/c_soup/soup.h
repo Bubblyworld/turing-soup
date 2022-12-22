@@ -136,8 +136,9 @@ inline static void state_t_reset(state_t *t) {
 bool redexes(term_t term, state_t *s); // IMPLEMENT ME
 
 // The second useful thing we can do with terms is apply a redex to them. This
-// is done in-place, with the term reallocated to a larger size if necessary.
-void apply_redex(term_t term, indices_t *indices, state_t *s); // IMPLEMENT ME
+// is done in-place, with the term reallocated to a larger size if necessary. A
+// pointer to the resulting term is returned.
+term_t apply_redex(term_t term, indices_t *indices, state_t *s); // IMPLEMENT ME
 
 // Finally, we can normalise terms, which removes unnecessary parentheses:
 void normalise(term_t term, state_t *s); // IMPLEMENT ME

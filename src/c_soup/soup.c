@@ -72,7 +72,7 @@ bool redexes(term_t term, state_t *s) {
 }
 
 // Applies the given redex to the term in-place.
-void apply_redex(term_t term, indices_t *indices, state_t *s) {
+term_t apply_redex(term_t term, indices_t *indices, state_t *s) {
   char *subterm = term + indices->data[0];
   if (subterm[0] == 'I') {
     // Ix = x
@@ -86,18 +86,22 @@ void apply_redex(term_t term, indices_t *indices, state_t *s) {
     memcpy(y, rest, strlen(rest) + 1);
     memcpy(subterm, x, strlen(x) + 1);
   } else if (subterm[0] == 'S') {
-    // Sxyz = (xz)(yz)
+    // Sxyz = xz(yz)
+    int x_len = indices->data[2] - indices->data[1];
+    int y_len = indices->data[3] - indices->data[2];
+    int z_len = indices->data[4] - indices->data[3];
+    int rest_len = strlen(term + indices->data[4]);
+    int term_len = strlen(term);
+    term = realloc(term, sizeof(char) * (strlen(term) + z_len + 3));
+    subterm = term + indices->data[0];
     char *x = term + indices->data[1];
     char *y = term + indices->data[2];
     char *z = term + indices->data[3];
     char *rest = term + indices->data[4];
-    int x_len = y - x;
-    int y_len = z - y;
-    int z_len = rest - z;
-    term = realloc(term, sizeof(char) * (strlen(term) + z_len + 3));
-    memmove(rest + z_len + 2, rest, strlen(rest) + 1);
-    memmove(x + x_len + y_len + z_len + 1, z, z_len);
+    *(term + term_len + z_len + 2) = '\0';
+    memmove(rest + z_len + 2, rest, rest_len);
     *(x + x_len + y_len + 2*z_len + 1) = ')';
+    memmove(x + x_len + y_len + z_len + 1, z, z_len);
     memmove(x + x_len + z_len + 1, y, y_len);
     *(x + x_len + z_len) = '(';
     memmove(x + x_len, x + x_len + y_len + z_len + 1, z_len);
@@ -105,4 +109,5 @@ void apply_redex(term_t term, indices_t *indices, state_t *s) {
   }
 
   normalise(term, s);
+  return term;
 }
