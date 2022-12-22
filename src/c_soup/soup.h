@@ -132,13 +132,14 @@ inline static void state_t_reset(state_t *t) {
   subterms_t_reset(t->redexes);
 }
 
-// The first useful thing we can do with terms is calculate their redexes:
+// We need to be able to list all the redexes in a term.
 bool redexes(term_t term, state_t *s); // IMPLEMENT ME
 
-// The second useful thing we can do with terms is apply a redex to them. This
-// is done in-place, with the term reallocated to a larger size if necessary. A
-// pointer to the resulting term is returned.
-term_t apply_redex(term_t term, indices_t *indices, state_t *s); // IMPLEMENT ME
+// We need to be able to apply redexes to a term.
+term_t apply(term_t term, indices_t *indices, state_t *s); // IMPLEMENT ME
 
-// Finally, we can normalise terms, which removes unnecessary parentheses:
+// We need to be able to reduce a term to normal form.
+term_t reduce(term_t term, state_t *s); // IMPLEMENT ME
+
+// We need to be able to be able to put terms in a canonical form.
 void normalise(term_t term, state_t *s); // IMPLEMENT ME

@@ -1,7 +1,9 @@
-run: main.c soup.c soup.h
+compile: main.c soup.c soup.h
 		gcc -o soup main.c soup.c -I. -Wall -O3
+
+run: compile
 		./soup
 
-debug: main.c soup.c soup.h
-		gcc -o soup main.c soup.c -I. -Wall -g
+debug: compile
 		gdb ./soup
+

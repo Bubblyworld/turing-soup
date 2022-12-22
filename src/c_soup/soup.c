@@ -69,7 +69,7 @@ bool redexes(term_t term, state_t *s) {
 }
 
 // Applies the given redex to the term in-place.
-term_t apply_redex(term_t term, indices_t *indices, state_t *s) {
+term_t apply(term_t term, indices_t *indices, state_t *s) {
   char *subterm = term + indices->data[0];
   if (subterm[0] == 'I') {
     // Ix = x
@@ -106,5 +106,31 @@ term_t apply_redex(term_t term, indices_t *indices, state_t *s) {
   }
 
   normalise(term, s);
+  return term;
+}
+
+// Reduces the given term to its normal form, and returns the result. Note that
+// if the given term has no normal form, this will loop forever. We use the
+// heuristic that redexes which reduce the size of the term (i.e. K, I) are
+// applied first.
+term_t reduce(term_t term, state_t *s) {
+  while (redexes(term, s)) {
+    // Find the first K, I redex and apply it:
+    bool found = false;
+    for (int i = 0; i < s->redexes->size; i++) {
+      indices_t *indices = &s->redexes->data[i];
+      if (term[indices->data[0]] == 'K' ||
+          term[indices->data[0]] == 'I') {
+        term = apply(term, indices, s);
+        found = true;
+        break;
+      }
+    }
+    // Or just apply the first one if they're all S redexes:
+    // TODO: might make sense to look for the smallest S redex
+    if (!found) {
+      term = apply(term, &s->redexes->data[0], s);
+    }
+  }
   return term;
 }
