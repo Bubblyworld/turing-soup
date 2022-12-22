@@ -78,7 +78,6 @@ inline static term_t term_t_new(const char *str) {
 inline static void term_t_free(term_t term) {
   free(term);
 }
-void normalise(term_t term); // IMPLEMENT ME
 
 // When working with terms, we often need to store the set of indices of
 // successive subterms within the term, so that we can easily compute
@@ -111,33 +110,34 @@ inline static bool subterm_is_redex(term_t term, indices_t *indices) {
   );
 }
 
-// The first useful thing we can do with terms is calculate their sets of
-// subterms, as well as their sets of redexes. To make this really fast we
-// keep a cached pair of stacks as working memory for the algorithms:
+// The following data structures act as cached working memory so we can avoid
+// allocations when we're messing with terms:
 STACK(indices_t, subterms_t);
 typedef struct {
-  subterms_t *subterms;
+  subterms_t *stack;
   subterms_t *redexes;
-} term_subterms_t;
-inline static void term_subterms_t_init(term_subterms_t *t) {
-  t->subterms = malloc(sizeof(subterms_t));
+} state_t;
+inline static void state_t_init(state_t *t) {
+  t->stack = malloc(sizeof(subterms_t));
   t->redexes = malloc(sizeof(subterms_t));
-  subterms_t_init(t->subterms);
+  subterms_t_init(t->stack);
   subterms_t_init(t->redexes);
 }
-inline static void term_subterms_t_free(term_subterms_t *t) {
-  subterms_t_free(t->subterms);
+inline static void state_t_free(state_t *t) {
+  subterms_t_free(t->stack);
   subterms_t_free(t->redexes);
 }
-inline static void term_subterms_t_reset(term_subterms_t *t) {
-  subterms_t_reset(t->subterms);
+inline static void state_t_reset(state_t *t) {
+  subterms_t_reset(t->stack);
   subterms_t_reset(t->redexes);
 }
-// Constraint: must return true if there were any redexes, false otherwise.
-bool redexes(term_t term, term_subterms_t *s); // IMPLEMENT ME
 
-/******************************************************************************
- *                       EVALUATING A REDEX IN A TERM                          *
- ******************************************************************************/
+// The first useful thing we can do with terms is calculate their redexes:
+bool redexes(term_t term, state_t *s); // IMPLEMENT ME
 
-//int apply_redex(term_t term, subterms_t *redex);
+// The second useful thing we can do with terms is apply a redex to them. This
+// is done in-place, with the term reallocated to a larger size if necessary.
+void apply_redex(term_t term, indices_t *indices, state_t *s); // IMPLEMENT ME
+
+// Finally, we can normalise terms, which removes unnecessary parentheses:
+void normalise(term_t term, state_t *s); // IMPLEMENT ME
