@@ -11,12 +11,10 @@ void normalise(term_t term, state_t *s) {
     return;
   }
 
-  int i = -1;
   subterms_t_push(s->stack);
   indices_t_push(subterms_t_top(s->stack));
-  *indices_t_top(subterms_t_top(s->stack)) = i;
-  do { // hack so we explicitly handle the '\0' char
-    i++;
+  *indices_t_top(subterms_t_top(s->stack)) = -1;
+  for (int i = 0; term[i] != '\0'; i++) {
     if (term[i] == '(') {
       subterms_t_push(s->stack);
       indices_t_push(subterms_t_top(s->stack));
@@ -25,7 +23,6 @@ void normalise(term_t term, state_t *s) {
       indices_t_push(subterms_t_top(s->stack));
       *indices_t_top(subterms_t_top(s->stack)) = i;
       indices_t *pop = subterms_t_pop(s->stack);
-
       if (pop->data[1] - pop->data[0] <= 2 ||
           pop->data[0] == subterms_t_top(s->stack)->data[0] + 1) {
         char *start = &term[pop->data[0]];
@@ -35,7 +32,7 @@ void normalise(term_t term, state_t *s) {
         i -= 2;
       }
     }
-  } while (term[i] != '\0');
+  };
 }
 
 // Writes all of the redexes in the given term to s->redexes, and returns
