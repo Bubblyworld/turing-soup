@@ -1,6 +1,6 @@
 # Turing Soup
 
-The idea is to take a set of terms in the (combinator calculus)[https://en.wikipedia.org/wiki/Combinatory_logic], and _react_ them to produce new sets of terms, while keeping the total number of base combinators in the soup constant. After reacting the terms together for a while, you start to see self-replicating terms popping up emergently, which is pretty cool. There are three possible reactions:
+The idea is to take a set of terms in the [combinator calculus](https://en.wikipedia.org/wiki/Combinatory_logic), and _react_ them to produce new sets of terms, while keeping the total number of base combinators in the soup constant. After reacting the terms together for a while, you start to see self-replicating terms popping up emergently, which is pretty cool. There are three possible reactions:
 
 1) A term is _fused_ with another term, which means that we remove them both from the soup and add their concatenation back in.
 2) A term is _fissioned_, which means that we remove it from the soup, split it randomly, and add the two components back in.
