@@ -17,7 +17,7 @@ Supported combinators (at least in the python version) are:
 * `Cxyz -> xzy`
 
 This idea appears in a few places in the literature, but doesn't seem to be very well explored at all:
-* [`Combinatory Chemistry: Towards a Simple Model of Emergent Evolution`](https://arxiv.org/abs/2003.07916)
+* [Combinatory Chemistry: Towards a Simple Model of Emergent Evolution](https://arxiv.org/abs/2003.07916)
 * [Towards Complex Artificial Life](https://deepai.org/publication/towards-complex-artificial-life)
 * [Programs as Polypeptides](https://direct.mit.edu/artl/article-abstract/22/4/451/2852/Programs-as-Polypeptides?redirectedFrom=fulltext)
 
